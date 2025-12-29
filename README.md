@@ -22,34 +22,17 @@ A Windows 11 console application that captures system audio output and transcrib
 
 ### Software
 - **OS**: Windows 11
-- **NVIDIA Driver**: Version 522.06 or later
-- **CUDA Toolkit**: 11.8 or 12.x ([Download](https://developer.nvidia.com/cuda-downloads))
 - **Python**: 3.10 or 3.11 ([Download](https://www.python.org/downloads/))
+- **NVIDIA Driver**: Version 522.06 or later (for GPU mode)
+- **CUDA Toolkit**: 12.4 (for GPU mode) ([Download](https://developer.nvidia.com/cuda-downloads))
+  - **cuDNN**: Included with PyTorch (no separate installation required)
+  - **Note**: CTranslate2 4.5+ requires CUDA 12.x. CUDA 11.8 is not compatible.
+
+> **Note**: The application now defaults to **CPU mode** for better compatibility. GPU acceleration is optional and requires proper CUDA/cuDNN setup.
 
 ## Installation
 
-### 1. Install CUDA Toolkit
-
-1. Download CUDA Toolkit 11.8+ from [NVIDIA](https://developer.nvidia.com/cuda-downloads)
-2. Run the installer and follow the prompts
-3. Verify installation:
-   ```powershell
-   nvcc --version
-   ```
-
-### 2. Install PyTorch with CUDA Support
-
-```powershell
-# Install PyTorch with CUDA 11.8 (or adjust for your CUDA version)
-pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
-```
-
-Verify GPU is detected:
-```powershell
-python -c "import torch; print(f'CUDA available: {torch.cuda.is_available()}'); print(f'Device: {torch.cuda.get_device_name(0) if torch.cuda.is_available() else \"None\"}')"
-```
-
-### 3. Clone and Setup Project
+### Quick Start (CPU Mode)
 
 ```powershell
 cd C:\GithubProjects
@@ -61,17 +44,24 @@ python -m venv venv
 # Activate virtual environment
 .\venv\Scripts\Activate.ps1
 
-# Install dependencies
+# Install PyTorch with CUDA 12.4 (for GPU support)
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
+
+# Install other dependencies
 pip install -r requirements.txt
-```
 
-### 4. Verify Audio Devices
-
-```powershell
+# Verify audio devices
 python transcriptor.py --list-devices
+
+# Start transcription
+python transcriptor.py
 ```
 
 Look for a device with "** LOOPBACK DEVICE **" - this captures your speaker output.
+
+### GPU Setup (Optional - See "GPU Setup" section below for details)
+
+For 3-4x faster transcription, follow the GPU setup instructions after completing the quick start.
 
 ## Usage
 
@@ -100,12 +90,39 @@ python transcriptor.py --verbose
 # Specify output directory
 python transcriptor.py --output-dir "D:\Transcriptions"
 
-# Use CPU instead of GPU (much slower)
-python transcriptor.py --device cpu
+# Enable GPU mode (requires proper CUDA/cuDNN setup)
+python transcriptor.py --device cuda
 
 # List all available options
 python transcriptor.py --help
 ```
+
+### GPU Setup (Optional)
+
+To enable GPU acceleration for 3-4x faster transcription:
+
+1. **Install CUDA Toolkit 12.4**: [Download here](https://developer.nvidia.com/cuda-downloads)
+2. **Verify CUDA installation**: `nvcc --version` (should show 12.4)
+3. **Install PyTorch with CUDA 12.4**:
+   ```powershell
+   pip uninstall torch torchvision torchaudio
+   pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
+   ```
+4. **Verify CUDA is working**:
+   ```powershell
+   python -c "import torch; print(f'CUDA available: {torch.cuda.is_available()}'); print(f'CUDA version: {torch.version.cuda}')"
+   ```
+   Should output: `CUDA available: True` and `CUDA version: 12.4`
+5. **Update config.py**:
+   ```python
+   WHISPER_DEVICE = "cuda"
+   WHISPER_COMPUTE_TYPE = "float16"
+   ```
+6. **Or use command line**: `python transcriptor.py --device cuda`
+
+> **Important**: CTranslate2 4.5+ requires CUDA 12.x. If you have CUDA 11.8, you must upgrade to CUDA 12.4.
+
+If you see cuDNN errors, the app will automatically fall back to CPU mode.
 
 ### Ollama Integration (Optional)
 
@@ -168,6 +185,32 @@ With RTX 3060 + faster-whisper:
 **Example**: For 60-second audio chunks with `large-v2`, expect ~15-20 seconds processing time.
 
 ## Troubleshooting
+
+### CUDA Library Errors
+
+#### Error: `Library cublas64_12.dll is not found`
+
+**Root Cause**: CTranslate2 4.5+ requires CUDA 12.x, but you have CUDA 11.8 or PyTorch built with CUDA 11.8.
+
+**Solution**: Install PyTorch with CUDA 12.4:
+```powershell
+pip uninstall torch torchvision torchaudio
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
+```
+
+#### Error: `Could not load library cudnn_ops_infer64_8.dll`
+
+**Root Cause**: CTranslate2 versions prior to 4.5.0 required cuDNN 8.x, but modern PyTorch bundles cuDNN 9.x.
+
+**Solution**: Upgrade to CTranslate2 4.5.0 or later (included in requirements.txt):
+```powershell
+pip install --upgrade ctranslate2 faster-whisper
+```
+
+**Key Compatibility Requirements**:
+- CTranslate2 4.5+ requires CUDA 12.x and cuDNN 9.x
+- PyTorch with CUDA 12.4 includes compatible cuDNN 9.x
+- No separate cuDNN installation needed
 
 ### CUDA Not Available
 

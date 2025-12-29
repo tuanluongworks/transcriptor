@@ -2,7 +2,14 @@
 Configuration settings for Transcriptor application
 """
 import os
+import warnings
 from pathlib import Path
+
+# Suppress benign cuDNN version mismatch warnings
+# CTranslate2 3.24.0 expects cuDNN 8.x, PyTorch 2.7.1 bundles cuDNN 9.x
+# The warning is harmless - CTranslate2 falls back to cuBLAS for operations
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Suppress TensorFlow-style warnings
+warnings.filterwarnings('ignore', message='.*cudnn.*', category=UserWarning)
 
 # Project paths
 PROJECT_ROOT = Path(__file__).parent
@@ -11,8 +18,8 @@ OUTPUT_DIR.mkdir(exist_ok=True)
 
 # Whisper Model Settings
 WHISPER_MODEL = "large-v2"  # Maximum accuracy
-WHISPER_DEVICE = "cuda"  # Use GPU
-WHISPER_COMPUTE_TYPE = "float16"  # Optimize for RTX 3060
+WHISPER_DEVICE = "cpu"  # Use CPU (set to "cuda" if you have CUDA properly installed)
+WHISPER_COMPUTE_TYPE = "int8"  # Optimize for CPU (use "float16" for GPU)
 WHISPER_LANGUAGE = "en"  # English only
 
 # Audio Settings

@@ -6,8 +6,13 @@ scipy>=1.10.0
 pyaudiowpatch>=0.2.12.5
 
 # GPU-accelerated Whisper
-faster-whisper>=1.0.0
-torch>=2.0.0
+# IMPORTANT: CTranslate2 4.5+ requires CUDA 12.x
+# Install PyTorch separately with CUDA 12.4:
+#   pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
+# Then install other requirements:
+#   pip install -r requirements.txt
+ctranslate2>=4.5.0  # Requires CUDA 12.x and cuDNN 9.x
+faster-whisper>=1.2.0  # Compatible with CTranslate2 4.5+
 
 # Voice Activity Detection
 webrtcvad>=2.0.10

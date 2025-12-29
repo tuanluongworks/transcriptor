@@ -1,6 +1,16 @@
 """
 Transcription engine using Faster-Whisper with GPU acceleration
 """
+import os
+import warnings
+
+# Suppress cuDNN library warnings before importing ML libraries
+os.environ.setdefault('TF_CPP_MIN_LOG_LEVEL', '2')
+# Disable CUDA if not properly configured to prevent cuDNN errors
+if os.environ.get('FORCE_CPU', '').lower() in ('1', 'true', 'yes'):
+    os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+warnings.filterwarnings('ignore', category=UserWarning)
+
 import numpy as np
 from faster_whisper import WhisperModel
 from typing import List, Tuple, Optional
@@ -44,9 +54,17 @@ class TranscriptionEngine:
         self.model_name = model_name
         self.device = device
         self.compute_type = compute_type
+        self.actual_device = device  # Track what device is actually used
         
         print(f"Loading Whisper model '{model_name}' on {device} ({compute_type})...")
         print("This may take a few minutes on first run (downloading model)...")
+        
+        # Temporarily suppress stderr to hide cuDNN library warnings
+        # These are benign - CTranslate2 3.24.0 expects cuDNN 8.x but PyTorch bundles cuDNN 9.x
+        import sys
+        from io import StringIO
+        original_stderr = sys.stderr
+        sys.stderr = StringIO()
         
         try:
             self.model = WhisperModel(
@@ -56,12 +74,35 @@ class TranscriptionEngine:
                 download_root=None,  # Use default cache
                 local_files_only=False
             )
-            print(f"Model loaded successfully!")
+            print(f"Model loaded successfully on {device}!")
+            self.actual_device = device
             
         except Exception as e:
-            print(f"ERROR loading model: {e}")
-            print(f"Make sure CUDA is properly installed for GPU acceleration")
-            raise
+            sys.stderr = original_stderr  # Restore stderr for error messages
+            if device == "cuda":
+                print(f"WARNING: GPU initialization failed: {e}")
+                print("Falling back to CPU mode...")
+                try:
+                    # Retry with CPU
+                    self.model = WhisperModel(
+                        model_name,
+                        device="cpu",
+                        compute_type="int8",  # More efficient for CPU
+                        download_root=None,
+                        local_files_only=False
+                    )
+                    self.actual_device = "cpu"
+                    print(f"Model loaded successfully on CPU!")
+                    print("NOTE: CPU transcription will be slower than GPU")
+                except Exception as cpu_error:
+                    print(f"ERROR: Failed to load model on both GPU and CPU: {cpu_error}")
+                    raise
+            else:
+                print(f"ERROR loading model: {e}")
+                raise
+        finally:
+            # Always restore stderr
+            sys.stderr = original_stderr
         
         # Voice Activity Detector
         self.vad = VoiceActivityDetector()
@@ -187,19 +228,28 @@ class TranscriptionEngine:
         try:
             start_time = time.time()
             
-            segments, info = self.model.transcribe(
-                audio_data,
-                language=config.WHISPER_LANGUAGE,
-                beam_size=5,
-                best_of=5,
-                temperature=0.0,
-                vad_filter=True,  # Use Whisper's built-in VAD
-                vad_parameters={
-                    "threshold": 0.5,
-                    "min_speech_duration_ms": 250,
-                    "min_silence_duration_ms": 500
-                }
-            )
+            # Suppress cuDNN warnings during transcription
+            import sys
+            from io import StringIO
+            original_stderr = sys.stderr
+            sys.stderr = StringIO()
+            
+            try:
+                segments, info = self.model.transcribe(
+                    audio_data,
+                    language=config.WHISPER_LANGUAGE,
+                    beam_size=5,
+                    best_of=5,
+                    temperature=0.0,
+                    vad_filter=True,  # Use Whisper's built-in VAD
+                    vad_parameters={
+                        "threshold": 0.5,
+                        "min_speech_duration_ms": 250,
+                        "min_silence_duration_ms": 500
+                    }
+                )
+            finally:
+                sys.stderr = original_stderr
             
             processing_time = time.time() - start_time
             

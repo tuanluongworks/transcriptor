@@ -2,6 +2,16 @@
 Transcriptor - Real-time Audio Transcription Application
 Captures system audio and transcribes using GPU-accelerated Whisper
 """
+import os
+import warnings
+
+# Suppress cuDNN version mismatch warnings at startup
+os.environ.setdefault('TF_CPP_MIN_LOG_LEVEL', '2')
+# Disable CUDA if not properly configured to prevent cuDNN errors
+if os.environ.get('FORCE_CPU', '').lower() in ('1', 'true', 'yes'):
+    os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+warnings.filterwarnings('ignore', category=UserWarning)
+
 import argparse
 import sys
 import time
@@ -61,6 +71,34 @@ class Transcriptor:
         print(f"\n{Fore.YELLOW}Received shutdown signal, stopping gracefully...{Style.RESET_ALL}")
         self.stop()
     
+    def _validate_cuda_setup(self):
+        """Validate CUDA and library compatibility"""
+        try:
+            import torch
+            import ctranslate2
+            
+            print(f"  PyTorch: {torch.__version__}")
+            print(f"  CTranslate2: {ctranslate2.__version__}")
+            print(f"  CUDA available: {torch.cuda.is_available()}")
+            
+            if torch.cuda.is_available():
+                cuda_version = torch.version.cuda
+                print(f"  CUDA version: {cuda_version}")
+                
+                # Check version compatibility
+                if cuda_version and cuda_version.startswith("11"):
+                    # Ensure CTranslate2 is 3.x for CUDA 11.x
+                    ct2_version = ctranslate2.__version__
+                    if not ct2_version.startswith("3"):
+                        print(f"{Fore.YELLOW}  WARNING: CTranslate2 {ct2_version} may not be compatible with CUDA {cuda_version}{Style.RESET_ALL}")
+                        print(f"{Fore.YELLOW}  Recommended: pip install ctranslate2==3.24.0{Style.RESET_ALL}")
+                
+            else:
+                print(f"{Fore.YELLOW}  WARNING: CUDA not available, will attempt to use GPU anyway{Style.RESET_ALL}")
+                
+        except Exception as e:
+            print(f"{Fore.YELLOW}  WARNING: Could not validate CUDA setup: {e}{Style.RESET_ALL}")
+    
     def initialize(self) -> bool:
         """Initialize all components"""
         try:
@@ -74,6 +112,11 @@ class Transcriptor:
             
             # Initialize transcription engine (loads model)
             print(f"{Fore.YELLOW}[2/4] Loading Whisper model '{self.args.model}'...{Style.RESET_ALL}")
+            
+            # Validate CUDA setup before loading model
+            if self.args.device == "cuda":
+                self._validate_cuda_setup()
+            
             self.transcription_engine = TranscriptionEngine(
                 model_name=self.args.model,
                 device=self.args.device,
@@ -124,7 +167,8 @@ class Transcriptor:
             print(f"Model: {self.args.model}")
             print(f"Chunk duration: {self.args.chunk_duration}s")
             print(f"Output: {self.output_handler.get_output_path()}")
-            print(f"Device: {self.args.device} ({self.args.compute_type})")
+            actual_device = getattr(self.transcription_engine, 'actual_device', self.args.device)
+            print(f"Device: {actual_device} ({self.args.compute_type if actual_device == self.args.device else 'int8'})")
             print(f"{Fore.CYAN}{'='*80}{Style.RESET_ALL}\n")
             
             # Start transcription engine
