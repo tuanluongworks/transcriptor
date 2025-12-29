@@ -18,8 +18,8 @@ OUTPUT_DIR.mkdir(exist_ok=True)
 
 # Whisper Model Settings
 WHISPER_MODEL = "large-v2"  # Maximum accuracy
-WHISPER_DEVICE = "cpu"  # Use CPU (set to "cuda" if you have CUDA properly installed)
-WHISPER_COMPUTE_TYPE = "int8"  # Optimize for CPU (use "float16" for GPU)
+WHISPER_DEVICE = "cuda"  # Use CUDA GPU by default (set to "cpu" for CPU-only systems)
+WHISPER_COMPUTE_TYPE = "float16"  # Optimize for GPU (use "int8" for CPU)
 WHISPER_LANGUAGE = "en"  # English only
 
 # Audio Settings
