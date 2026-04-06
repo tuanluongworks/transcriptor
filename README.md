@@ -23,6 +23,8 @@ A Windows 11 console application that captures system audio output and transcrib
 ### Software
 - **OS**: Windows 11
 - **Python**: 3.10 or 3.11 ([Download](https://www.python.org/downloads/))
+- **Microsoft C++ Build Tools**: Required to compile native packages like `webrtcvad` ([Download](https://visualstudio.microsoft.com/visual-cpp-build-tools/))
+  - During install, select **"Desktop development with C++"** workload
 - **NVIDIA Driver**: Version 522.06 or later (for GPU mode)
 - **CUDA Toolkit**: 12.4 (for GPU mode) ([Download](https://developer.nvidia.com/cuda-downloads))
   - **cuDNN**: Included with PyTorch (no separate installation required)
@@ -42,10 +44,16 @@ cd transcriptor
 python -m venv venv
 
 # Activate virtual environment
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 .\venv\Scripts\Activate.ps1
 
 # Install PyTorch with CUDA 12.4 (for GPU support)
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
+
+# Prerequisites: Install Microsoft C++ Build Tools first
+# Download from: https://visualstudio.microsoft.com/visual-cpp-build-tools/
+# Select "Desktop development with C++" workload during install
+# This is required to compile native packages like webrtcvad
 
 # Install other dependencies
 pip install -r requirements.txt
