@@ -64,6 +64,7 @@ pip install "setuptools<81"
 
 # Start transcription
 python transcriptor.py
+
 ```
 
 Look for a device with "** LOOPBACK DEVICE **" - this captures your speaker output.
