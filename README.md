@@ -37,8 +37,8 @@ A Windows 11 console application that captures system audio output and transcrib
 ### Quick Start (CPU Mode)
 
 ```powershell
-cd C:\GithubProjects
-cd transcriptor
+# cd C:\GithubProjects
+# cd transcriptor
 
 # Create virtual environment
 python -m venv venv
@@ -48,7 +48,7 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 .\venv\Scripts\Activate.ps1
 
 # Install PyTorch with CUDA 12.4 (for GPU support)
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
+# pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
 
 # Prerequisites: Install Microsoft C++ Build Tools first
 # Download from: https://visualstudio.microsoft.com/visual-cpp-build-tools/
@@ -57,9 +57,10 @@ pip install torch torchvision torchaudio --index-url https://download.pytorch.or
 
 # Install other dependencies
 pip install -r requirements.txt
+pip install "setuptools<81"
 
 # Verify audio devices
-python transcriptor.py --list-devices
+# python transcriptor.py --list-devices
 
 # Start transcription
 python transcriptor.py
