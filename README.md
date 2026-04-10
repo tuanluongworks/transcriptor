@@ -15,20 +15,11 @@ A Windows 11 console application that captures system audio output and transcrib
 
 ## System Requirements
 
-### Hardware
-- **GPU**: NVIDIA RTX 3060 (6GB VRAM) or better
-- **RAM**: 16GB+ recommended
-- **Storage**: 5GB for models + space for transcriptions
-
 ### Software
 - **OS**: Windows 11
 - **Python**: 3.10 or 3.11 ([Download](https://www.python.org/downloads/))
 - **Microsoft C++ Build Tools**: Required to compile native packages like `webrtcvad` ([Download](https://visualstudio.microsoft.com/visual-cpp-build-tools/))
   - During install, select **"Desktop development with C++"** workload
-- **NVIDIA Driver**: Version 522.06 or later (for GPU mode)
-- **CUDA Toolkit**: 12.4 (for GPU mode) ([Download](https://developer.nvidia.com/cuda-downloads))
-  - **cuDNN**: Included with PyTorch (no separate installation required)
-  - **Note**: CTranslate2 4.5+ requires CUDA 12.x. CUDA 11.8 is not compatible.
 
 > **Note**: The application now defaults to **CPU mode** for better compatibility. GPU acceleration is optional and requires proper CUDA/cuDNN setup.
 
@@ -108,6 +99,17 @@ python transcriptor.py --help
 ```
 
 ### GPU Setup (Optional)
+
+Software Requirements
+- **OS**: Windows 11
+- **Python**: 3.10 or 3.11 ([Download](https://www.python.org/downloads/))
+- **Microsoft C++ Build Tools**: Required to compile native packages like `webrtcvad` ([Download](https://visualstudio.microsoft.com/visual-cpp-build-tools/))
+  - During install, select **"Desktop development with C++"** workload
+- **NVIDIA Driver**: Version 522.06 or later (for GPU mode)
+- **CUDA Toolkit**: 12.4 (for GPU mode) ([Download](https://developer.nvidia.com/cuda-downloads))
+  - **cuDNN**: Included with PyTorch (no separate installation required)
+  - **Note**: CTranslate2 4.5+ requires CUDA 12.x. CUDA 11.8 is not compatible.
+
 
 To enable GPU acceleration for 3-4x faster transcription:
 
